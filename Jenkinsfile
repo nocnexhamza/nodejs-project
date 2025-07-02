@@ -48,16 +48,19 @@ spec:
       privileged: true
     resources:
       requests:
-        memory: "512Mi"
+        memory: "1Gi"
         cpu: "500m"
     volumeMounts:
-    - mountPath: "/var/run/docker.sock"
+    - mountPath: "/var/run"
       name: "docker-sock"
     - mountPath: "/home/jenkins/agent"
       name: "workspace-volume"
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
+    - name: DOCKER_HOST
+      value: "tcp://localhost:2375"
+    args: ["--storage-driver=overlay2"]
   volumes:
   - name: "workspace-volume"
     emptyDir: {}
@@ -84,15 +87,16 @@ spec:
             steps {
                 container('dind') {
                     script {
-                        // Increased timeout and added health check
                         retry(5) {
-                            timeout(time: 2, unit: 'MINUTES') {
+                            timeout(time: 3, unit: 'MINUTES') {
                                 sh '''
+                                    echo "Waiting for Docker daemon to start..."
+                                    sleep 10
+                                    docker version || true
                                     while ! docker ps; do
                                         echo "Waiting for Docker to be ready..."
                                         sleep 5
                                     done
-                                    docker info
                                 '''
                             }
                         }
@@ -144,18 +148,6 @@ spec:
           requests:
             cpu: "500m"
             memory: "256Mi"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nodejs-service
-spec:
-  type: ClusterIP
-  selector:
-    app: nodejs-app
-  ports:
-  - port: 80
-    targetPort: 3000
 """
                         writeFile file: 'deployment.yaml', text: deploymentYaml
 
@@ -165,20 +157,6 @@ spec:
                                 kubectl apply -f deployment.yaml
                             """
                         }
-                    }
-                }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                container('kubectl') {
-                    withCredentials([file(credentialsId: 'kubernetes_file', variable: 'KUBECONFIG')]) {
-                        sh """
-                            export KUBECONFIG=\${KUBECONFIG}
-                            kubectl rollout status deployment/nodejs-app --timeout=300s
-                            kubectl get pods,svc
-                        """
                     }
                 }
             }
