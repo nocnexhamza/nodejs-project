@@ -13,8 +13,8 @@ spec:
     image: nocnex/jenkins-agent:nerdctlv4
     resources:
       requests:
-        memory: "256Mi"
-        cpu: "100m"
+        memory: "512Mi"
+        cpu: "500m"
     securityContext:
       privileged: true
     volumeMounts:
@@ -24,6 +24,10 @@ spec:
     image: node:18-slim
     command: ["cat"]
     tty: true
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
     volumeMounts:
     - mountPath: "/home/jenkins/agent"
       name: "workspace-volume"
@@ -31,6 +35,10 @@ spec:
     image: bitnami/kubectl:1.29
     command: ["cat"]
     tty: true
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
     volumeMounts:
     - mountPath: "/home/jenkins/agent"
       name: "workspace-volume"
@@ -38,9 +46,18 @@ spec:
     image: docker:dind
     securityContext:
       privileged: true
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
     volumeMounts:
     - mountPath: "/var/run/docker.sock"
       name: "docker-sock"
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+    env:
+    - name: DOCKER_TLS_CERTDIR
+      value: ""
   volumes:
   - name: "workspace-volume"
     emptyDir: {}
@@ -63,14 +80,22 @@ spec:
             }
         }
 
-        stage('Setup Docker') {
+        stage('Wait for Docker') {
             steps {
                 container('dind') {
                     script {
-                        sh '''
-                            docker --version
-                            docker info
-                        '''
+                        // Increased timeout and added health check
+                        retry(5) {
+                            timeout(time: 2, unit: 'MINUTES') {
+                                sh '''
+                                    while ! docker ps; do
+                                        echo "Waiting for Docker to be ready..."
+                                        sleep 5
+                                    done
+                                    docker info
+                                '''
+                            }
+                        }
                     }
                 }
             }
