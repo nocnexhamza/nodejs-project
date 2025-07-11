@@ -18,7 +18,7 @@ pipeline {
         stage('Build & Test') {
             agent {
                 docker {
-                    image 'node:14'
+                    image 'node:20'
                     args '-u root'  // Needed for dependency installation
                 }
             }
