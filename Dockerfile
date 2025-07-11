@@ -1,4 +1,4 @@
-FROM nodejs-app-v2:latest
+FROM nocnex/nodejs-website:latest
 
 WORKDIR /usr/src/app
 
