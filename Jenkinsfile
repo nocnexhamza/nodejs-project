@@ -3,8 +3,8 @@ pipeline {
     
     environment {
         DOCKER_REGISTRY = 'docker.io/nocnex'
-        APP_NAME = 'nodejs-application-test'
-        K8S_DEPLOYMENT = 'nodejs-application-test'
+        APP_NAME = 'nodejs-project'
+        K8S_DEPLOYMENT = 'nodejs-project'
     }
     
     stages {
@@ -28,6 +28,25 @@ pipeline {
             }
         }
         
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarQubeScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=nodejs-hello-world -Dsonar.sources=. -Dsonar.language=js"
+                    }
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
         stage('Build Docker Image') {
             steps {
                 script {
@@ -35,39 +54,6 @@ pipeline {
                         DOCKER_BUILDKIT=1 docker build \
                         -t ${DOCKER_REGISTRY}/${APP_NAME}:${env.BUILD_NUMBER} .
                     """
-                }
-            }
-        }
-        
-        // Corrected Trivy Stage
-        stage('Scan with Trivy') {
-            steps {
-                script {
-                    sh label: 'Trivy Scan', script: '''#!/bin/bash
-                        set -x  # Enable debug output
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v "$WORKSPACE:/workspace" \
-                            aquasec/trivy image \
-                            --exit-code 1 \
-                            --severity CRITICAL \
-                            --format table \
-                            --output /workspace/trivy-report.txt \
-                            "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}"
-                    '''
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
-                    publishHTML(target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
-                        reportDir: '.',
-                        reportFiles: 'trivy-report.txt',
-                        reportName: 'Trivy Report'
-                    ])
                 }
             }
         }
