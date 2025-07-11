@@ -42,10 +42,13 @@ pipeline {
             }
         }
         
-        stage('SonarQube Analysis') {
+                stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'sonar-scanner -Dsonar.projectKey=nodejs-hello-world -Dsonar.sources=. -Dsonar.language=js'
+                script {
+                    def scannerHome = tool 'SonarQubeScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=nodejs-hello-world -Dsonar.sources=. -Dsonar.language=js"
+                    }
                 }
             }
         }
