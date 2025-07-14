@@ -28,20 +28,6 @@ pipeline {
             }
         }
         
-        stage('Trivy Scan') {
-            steps {
-                script {
-                    sh 'trivy image --input Dockerfile --format table --output trivy-report.html || true'
-                    archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: true
-                    publishHTML(target: [
-                        reportDir: '.',
-                        reportFiles: 'trivy-report.html',
-                        reportName: 'Trivy Report'
-                    ])
-                }
-            }
-        }
-        
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -68,6 +54,20 @@ pipeline {
                         DOCKER_BUILDKIT=1 docker build \
                         -t ${DOCKER_REGISTRY}/${APP_NAME}:${env.BUILD_NUMBER} .
                     """
+                }
+            }
+        }
+
+      stage('Trivy Scan') {
+            steps {
+                script {
+                    sh 'trivy image --input Dockerfile --format table --output trivy-report.html || true'
+                    archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: true
+                    publishHTML(target: [
+                        reportDir: '.',
+                        reportFiles: 'trivy-report.html',
+                        reportName: 'Trivy Report'
+                    ])
                 }
             }
         }
