@@ -72,20 +72,20 @@ pipeline {
                             --exit-code 1 \
                             --severity CRITICAL \
                             --format table \
-                            --output /workspace/trivy-report.html \
+                            --output /workspace/trivy-report.json \
                             "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}"
                     '''
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
                     publishHTML(target: [
                         allowMissing: true,
                         alwaysLinkToLastBuild: false,
                         keepAll: true,
                         reportDir: '.',
-                        reportFiles: 'trivy-report.html',
+                        reportFiles: 'trivy-report.json',
                         reportName: 'Trivy Report'
                     ])
                 }
