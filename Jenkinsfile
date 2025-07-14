@@ -124,7 +124,7 @@ pipeline {
                 }
             }
         }
-    
+    }
         stage('Set Up Monitoring') {
             steps {
                  script {
