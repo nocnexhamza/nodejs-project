@@ -124,12 +124,12 @@ pipeline {
                 }
             }
         }
-    }
-    stage('Set Up Monitoring') {
-    steps {
-        script {
-            withKubeConfig([credentialsId: 'k8s-credentials']) {
-                sh 'helm install nodejs-servicemonitor ./charts/nodejs-servicemonitor --set appName=nodejs-project'
+    
+        stage('Set Up Monitoring') {
+            steps {
+                 script {
+                     withKubeConfig([credentialsId: 'k8s-credentials']) {
+                 sh 'helm install nodejs-servicemonitor ./charts/nodejs-servicemonitor --set appName=nodejs-project'
             }
         }
     }
