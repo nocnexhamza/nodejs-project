@@ -113,10 +113,10 @@ pipeline {
                     withKubeConfig([credentialsId: 'k8s-credentials']) {
                         sh """
                             sed 's|image:.*|image: ${DOCKER_REGISTRY}/${APP_NAME}:${env.BUILD_NUMBER}|g' \
-                                k8s/deployment.yaml > k8s/deployment-${env.BUILD_NUMBER}.yaml
+                                K8s/deployment.yaml > K8s/deployment-${env.BUILD_NUMBER}.yaml
                             
-                            kubectl apply -f k8s/deployment-${env.BUILD_NUMBER}.yaml
-                            kubectl apply -f k8s/service.yaml
+                            kubectl apply -f K8s/deployment-${env.BUILD_NUMBER}.yaml
+                            kubectl apply -f K8s/service.yaml
                             kubectl rollout status deployment/${K8S_DEPLOYMENT}
                         """
                     }
@@ -138,7 +138,7 @@ pipeline {
     post {
         always {
             script {
-                sh 'rm -f k8s/deployment-*.yaml trivy-report.* || true'
+                sh 'rm -f K8s/deployment-*.yaml trivy-report.* || true'
                 cleanWs()
             }
         }
