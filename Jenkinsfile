@@ -59,37 +59,36 @@ pipeline {
             }
         }
 
-                // Corrected Trivy Stage
         stage('Scan with Trivy') {
-    steps {
-        script {
-            sh label: 'Trivy Scan', script: '''#!/bin/bash
-                set -x
-                docker run --rm \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v "$WORKSPACE:/workspace" \
-                    aquasec/trivy image \
-                    --severity CRITICAL \
-                    --format table \
-                    --output /workspace/trivy-report.txt \
-                    "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}" || true
-            '''
+            steps {
+                script {
+                    sh label: 'Trivy Scan', script: '''#!/bin/bash
+                        set -x
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v "$WORKSPACE:/workspace" \
+                            aquasec/trivy image \
+                            --severity CRITICAL \
+                            --format table \
+                            --output /workspace/trivy-report.txt \
+                            "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}" || true
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'trivy-report.txt',
+                        reportName: 'Trivy Report'
+                    ])
+                }
+            }
         }
-    }
-    post {
-        always {
-            archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
-            publishHTML(target: [
-                allowMissing: true,
-                alwaysLinkToLastBuild: false,
-                keepAll: true,
-                reportDir: '.',
-                reportFiles: 'trivy-report.txt',
-                reportName: 'Trivy Report'
-            ])
-        }
-    }
-}
         
         stage('Push Docker Image') {
             steps {
@@ -124,16 +123,17 @@ pipeline {
                 }
             }
         }
-    }
+        
         stage('Set Up Monitoring') {
             steps {
-                 script {
-                     withKubeConfig([credentialsId: 'k8s-credentials']) {
-                 sh 'helm install nodejs-servicemonitor ./charts/nodejs-servicemonitor --set appName=nodejs-project'
+                script {
+                    withKubeConfig([credentialsId: 'k8s-credentials']) {
+                        sh 'helm install nodejs-servicemonitor ./charts/nodejs-servicemonitor --set appName=nodejs-project'
+                    }
+                }
             }
         }
     }
-}
    
     post {
         always {
