@@ -1,0 +1,4 @@
+apiVersion: v2
+name: nodejs-servicemonitor
+description: A Helm chart for deploying a ServiceMonitor for Node.js application
+version: 0.1.0
