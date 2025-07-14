@@ -59,9 +59,36 @@ pipeline {
             }
         }
 
-        stage('5. Trivy Scan') {
+                // Corrected Trivy Stage
+        stage('Scan with Trivy') {
             steps {
-                sh "trivy fs . > trivy.txt"
+                script {
+                    sh label: 'Trivy Scan', script: '''#!/bin/bash
+                        set -x  # Enable debug output
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v "$WORKSPACE:/workspace" \
+                            aquasec/trivy image \
+                            --exit-code 1 \
+                            --severity CRITICAL \
+                            --format table \
+                            --output /workspace/trivy-report.html \
+                            "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}"
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'trivy-report.html',
+                        reportName: 'Trivy Report'
+                    ])
+                }
             }
         }
         
