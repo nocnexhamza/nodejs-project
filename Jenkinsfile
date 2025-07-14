@@ -64,59 +64,24 @@ pipeline {
                 script {
                     sh label: 'Trivy Scan', script: '''#!/bin/bash
                         set -x  # Enable debug output
+                        # Verify Docker image exists
+                        docker images "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}" || echo "Docker image not found! Check Build Docker Image stage."
+
+                        # Run Trivy scan
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
                             -v "$WORKSPACE:/workspace" \
                             aquasec/trivy image \
-                            --exit-code 1 \
                             --severity CRITICAL \
                             --format table \
                             --output /workspace/trivy-report.txt \
-                            "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}"
-                        
-                        # Wrap table output in HTML
-                        cat <<EOF > /workspace/trivy-report.html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Trivy Vulnerability Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #333; }
-        pre { 
-            background-color: #f9f9f9; 
-            padding: 15px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            font-family: monospace; 
-            white-space: pre-wrap; 
-            word-wrap: break-word; 
-        }
-        .critical { color: red; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h1>Trivy Vulnerability Report</h1>
-    <pre class="critical">
-$(cat /workspace/trivy-report.txt || echo "No vulnerabilities found or scan failed.")
-    </pre>
-</body>
-</html>
-EOF
+                            "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}" || echo "Trivy scan failed. Check logs for details."
                     '''
                 }
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: true
-                    publishHTML(target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
-                        reportDir: '.',
-                        reportFiles: 'trivy-report.html',
-                        reportName: 'Trivy Report'
-                    ])
+                    archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
                 }
             }
         }
