@@ -59,30 +59,9 @@ pipeline {
             }
         }
 
-        stage('Scan with Trivy') {
+        stage('5. Trivy Scan') {
             steps {
-                script {
-                    sh label: 'Trivy Scan', script: '''#!/bin/bash
-                        set -x  # Enable debug output
-                        # Verify Docker image exists
-                        docker images "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}" || echo "Docker image not found! Check Build Docker Image stage."
-
-                        # Run Trivy scan
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v "$WORKSPACE:/workspace" \
-                            aquasec/trivy image \
-                            --severity CRITICAL \
-                            --format table \
-                            --output /workspace/trivy-report.txt \
-                            "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}" || echo "Trivy scan failed. Check logs for details."
-                    '''
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'trivy-report.txt', allowEmptyArchive: true
-                }
+                sh "trivy fs . > trivy.txt"
             }
         }
         
