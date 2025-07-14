@@ -125,8 +125,6 @@ pipeline {
             }
         }
     }
-<<<<<<< HEAD
-
     stage('Set Up Monitoring') {
     steps {
         script {
@@ -136,9 +134,7 @@ pipeline {
         }
     }
 }
-=======
->>>>>>> c0cc2528065b234fb0dd4e1c37827cc5ff89b68c
-    
+   
     post {
         always {
             script {
