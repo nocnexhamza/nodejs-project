@@ -71,7 +71,7 @@ pipeline {
                             aquasec/trivy image \
                             --exit-code 1 \
                             --severity CRITICAL \
-                            --format table \
+                            --format json \
                             --output /workspace/trivy-report.json \
                             "${DOCKER_REGISTRY}/${APP_NAME}:${BUILD_NUMBER}"
                     '''
