@@ -17,6 +17,10 @@ spec:
       containers:
       - name: nodejs-project
         image: nocnex/nodejs-project:latest
+      env:
+        - name: MONGO_URL  # Your app expects this variable
+          value: "mongodb://admin:password@mongodb:27017/mydatabase"
+
         ports:
         - containerPort: 3000
         resources:
